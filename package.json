@@ -1,0 +1,29 @@
+{
+  "name": "xingyan-danmu",
+  "version": "1.0.0",
+  "description": "panda.tv xingyan danmu module",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/BacooTang/xingyan-danmu.git"
+  },
+  "keywords": [
+    "panda.tv",
+    "xingyan",
+    "danmu"
+  ],
+  "dependencies": {
+    "md5": "*",
+    "request": "*",
+    "request-promise": "*"
+  },
+  "author": "BacooTang",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/BacooTang/xingyan-danmu/issues"
+  },
+  "homepage": "https://github.com/BacooTang/xingyan-danmu#readme"
+}
