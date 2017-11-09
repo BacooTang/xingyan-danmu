@@ -31,9 +31,7 @@ class xingyan_danmu extends events {
     }
 
     async start() {
-        if (this._starting) {
-            return
-        }
+        if (this._starting) return
         this._starting = true
         this._chat_info = await this._get_chat_info()
         if (!this._chat_info || !this._chat_info.addr || !this._chat_info.port) {
@@ -89,14 +87,16 @@ class xingyan_danmu extends events {
     }
 
     _format_msg(msg) {
+        if (msg.length <= 8) return
         try {
             msg = JSON.parse(msg)
         } catch (e) {
+            console.log(msg);
             return this.emit('error', e)
         }
         let msg_obj
         if (msg.type === 'chat' && msg.to == this._roomid) {
-            let msg_obj = {
+            msg_obj = {
                 type: 'chat',
                 time: new Date().getTime(),
                 from: {
@@ -109,21 +109,21 @@ class xingyan_danmu extends events {
                 raw: msg
             }
         } else if (msg.personnum && msg.xid == this._roomid) {
-            let msg_obj = {
+            msg_obj = {
                 type: 'online',
                 time: new Date().getTime(),
                 count: parseInt(msg.personnum),
                 raw: msg
             }
         } else if (msg.starval && msg.xid == this._roomid) {
-            let msg_obj = {
+            msg_obj = {
                 type: 'starval',
                 time: new Date().getTime(),
                 count: parseInt(msg.starval),
                 raw: msg
             }
         } else if (msg.type === 'gift' && msg.to == this._roomid) {
-            let msg_obj = {
+            msg_obj = {
                 type: 'gift',
                 time: new Date().getTime(),
                 name: msg.data.gift_name,
@@ -138,7 +138,7 @@ class xingyan_danmu extends events {
         } else if (msg.type === "bamboo" && msg.to == this._roomid) {
             let count_array = msg.data.text.match(/(\d+)/)
             let count = parseInt(count_array[1])
-            let msg_obj = {
+            msg_obj = {
                 type: 'gift',
                 time: new Date().getTime(),
                 name: '竹子',
