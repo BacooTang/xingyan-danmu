@@ -4,11 +4,13 @@ const events = require('events')
 const request = require('request-promise')
 const REQUEST_TIMEOUT = 10000
 const HEARTBEAT_INTERVAL = 30000
+const REFRESH_GIFT_INFO_INTERVAL = 30 * 60 * 1000
 
 class xingyan_danmu extends events {
     constructor(roomid) {
         super()
         this._roomid = roomid
+        this._gift_info = {}
         this._guid = "7773" + ("0000000000000000" + new Date().getTime().toString(16)).substr(-16) + ("000000000000" + parseInt(Math.random() * 1000000000).toString(16)).substr(-12)
     }
 
@@ -30,6 +32,52 @@ class xingyan_danmu extends events {
         }
     }
 
+    async _get_host_info() {
+        let opt = {
+            url: `http://m.api.xingyan.panda.tv/room/baseinfo?xid=${this._roomid}`,
+            timeout: REQUEST_TIMEOUT,
+            json: true,
+            gzip: true
+        }
+        try {
+            let body = await request(opt)
+            return body.data
+        } catch (e) {
+            return null
+        }
+    }
+
+    async _get_gift_info() {
+        let opt = {
+            url: `https://gift.xingyan.panda.tv/gifts?__plat=pc_web&hostid=${this._hostid}&__version=1.11.7&_=${new Date().getTime()}`,
+            timeout: REQUEST_TIMEOUT,
+            json: true,
+            gzip: true
+        }
+        try {
+            let body = await request(opt)
+            let gift_info = {}
+            body.data.forEach(g => {
+                gift_info[g.id] = {
+                    name: g.name,
+                    price: g.price
+                }
+            })
+            return gift_info
+        } catch (e) {
+            return null
+        }
+    }
+
+    async _refresh_gift_info() {
+        let gift_info = await this._get_gift_info()
+        if (gift_info) {
+            this._gift_info = gift_info
+        } else {
+            this.emit('error', new Error('Fail to get gift info'))
+        }
+    }
+
     async start() {
         if (this._starting) return
         this._starting = true
@@ -38,6 +86,19 @@ class xingyan_danmu extends events {
             this.emit('error', new Error('Fail to get chat info'))
             return this.emit('close')
         }
+        this._host_info = await this._get_host_info()
+        if (!this._host_info) {
+            this.emit('error', new Error('Fail to get host info'))
+            return this.emit('close')
+        }
+        this._hostid = this._host_info.roominfo.rid
+        let gift_info = await this._get_gift_info()
+        if (!gift_info) {
+            this.emit('error', new Error('Fail to get gift info'))
+            return this.emit('close')
+        }
+        this._gift_info = gift_info
+        this._refresh_gift_info_timer = setInterval(this._refresh_gift_info.bind(this), REFRESH_GIFT_INFO_INTERVAL)
         this._start_tcp()
     }
 
@@ -91,7 +152,6 @@ class xingyan_danmu extends events {
         try {
             msg = JSON.parse(msg)
         } catch (e) {
-            console.log(msg);
             return this.emit('error', e)
         }
         let msg_obj
@@ -105,6 +165,7 @@ class xingyan_danmu extends events {
                     level: msg.from.level_now,
                     plat: msg.plat
                 },
+                id: md5(JSON.stringify(msg)),
                 content: msg.data.text,
                 raw: msg
             }
@@ -123,6 +184,9 @@ class xingyan_danmu extends events {
                 raw: msg
             }
         } else if (msg.type === 'gift' && msg.to == this._roomid) {
+            let gift = this._gift_info[msg.data.gift_id] || { price: 0, name: msg.data.gift_name }
+            let price = gift.price
+            let count = parseInt(msg.data.count)
             msg_obj = {
                 type: 'gift',
                 time: new Date().getTime(),
@@ -132,7 +196,9 @@ class xingyan_danmu extends events {
                     rid: msg.from.rid + '',
                     level: msg.from.level_now
                 },
-                count: parseInt(msg.data.count),
+                id: md5(JSON.stringify(msg)),
+                price: price * count,
+                count: count,
                 raw: msg
             }
         } else if (msg.type === "bamboo" && msg.to == this._roomid) {
@@ -147,6 +213,7 @@ class xingyan_danmu extends events {
                     rid: msg.from.rid + '',
                     level: msg.from.level_now
                 },
+                id: md5(JSON.stringify(msg)),
                 count: count,
                 raw: msg
             }
@@ -162,6 +229,7 @@ class xingyan_danmu extends events {
 
     _stop() {
         this._starting = false
+        clearInterval(this._refresh_gift_info_timer)
         try {
             this._client.destroy()
         } catch (e) { }
