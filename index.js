@@ -137,18 +137,21 @@ class xingyan_danmu extends events {
     }
 
     _on_data(data) {
-        while (data.length > 0) {
-            let ignore_len = 22
-            data = data.slice(ignore_len)
-            let msg_len = data.readInt16BE(0)
-            let msg = data.slice(2, 2 + msg_len)
-            data = msg.slice(2 + msg_len)
-            this._format_msg(msg)
+        data = data.toString()
+        let start = 0
+        let index = 0
+        for (let i = 0; i < data.length; i++) {
+            if (data[i] === '{') {
+                index++ || (start = i)
+            } else if (data[i] === '}') {
+                if (!--index) {
+                    this._format_msg(data.substring(start, i + 1))
+                }
+            }
         }
     }
 
     _format_msg(msg) {
-        if (msg.length <= 8) return
         try {
             msg = JSON.parse(msg)
         } catch (e) {
