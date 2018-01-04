@@ -2,16 +2,31 @@ const net = require('net')
 const md5 = require('md5')
 const events = require('events')
 const request = require('request-promise')
+const socks = require('socks').SocksClient
+const socks_agent = require('socks-proxy-agent')
 const REQUEST_TIMEOUT = 10000
 const HEARTBEAT_INTERVAL = 30000
 const REFRESH_GIFT_INFO_INTERVAL = 30 * 60 * 1000
 
 class xingyan_danmu extends events {
-    constructor(roomid) {
+    constructor(roomid, proxy) {
         super()
         this._roomid = roomid
         this._gift_info = {}
         this._guid = "7773" + ("0000000000000000" + new Date().getTime().toString(16)).substr(-16) + ("000000000000" + parseInt(Math.random() * 1000000000).toString(16)).substr(-12)
+        this.set_proxy(proxy)
+    }
+
+    set_proxy(proxy) {
+        this._agent = null
+        if (proxy) {
+            this._proxy = proxy
+            let auth = ''
+            if (proxy.name && proxy.pass)
+                auth = `${proxy.name}:${proxy.pass}@`
+            let socks_url = `socks://${auth}${proxy.ip}:${proxy.port || 8080}`
+            this._agent = new socks_agent(socks_url)
+        }
     }
 
     async _get_chat_info() {
@@ -22,7 +37,8 @@ class xingyan_danmu extends events {
             url: `https://online.panda.tv/dispatch?guid=${this._guid}&plat=pc%5Fweb&time=${time}&xid=${this._roomid}&sign=${sign}&cluster=${cluster}`,
             timeout: REQUEST_TIMEOUT,
             json: true,
-            gzip: true
+            gzip: true,
+            agent: this._agent
         }
         try {
             let body = await request(opt)
@@ -37,7 +53,8 @@ class xingyan_danmu extends events {
             url: `http://m.api.xingyan.panda.tv/room/baseinfo?xid=${this._roomid}`,
             timeout: REQUEST_TIMEOUT,
             json: true,
-            gzip: true
+            gzip: true,
+            agent: this._agent
         }
         try {
             let body = await request(opt)
@@ -52,7 +69,8 @@ class xingyan_danmu extends events {
             url: `https://gift.xingyan.panda.tv/gifts?__plat=pc_web&hostid=${this._hostid}&__version=1.11.7&_=${new Date().getTime()}`,
             timeout: REQUEST_TIMEOUT,
             json: true,
-            gzip: true
+            gzip: true,
+            agent: this._agent
         }
         try {
             let body = await request(opt)
@@ -102,13 +120,39 @@ class xingyan_danmu extends events {
         this._start_tcp()
     }
 
-    _start_tcp() {
-        this._client = new net.Socket()
-        this._client.connect(parseInt(this._chat_info.port), this._chat_info.addr)
-        this._client.on('connect', () => {
+    async _start_tcp() {
+        const on_connect = () => {
             this.emit('connect')
             this._bind_user()
-        })
+        }
+        if (this._proxy) {
+            let options = {
+                proxy: {
+                    ipaddress: this._proxy.ip,
+                    port: this._proxy.port,
+                    type: 5
+                },
+                command: 'connect',
+                destination: {
+                    host: this._chat_info.addr,
+                    port: parseInt(this._chat_info.port)
+                },
+                timeout: 30000
+            }
+            options.userId = this._proxy.name || null
+            options.password = this._proxy.pass || null
+            try {
+                let info = await socks.createConnection(options)
+                this._client = info.socket
+                on_connect()
+            } catch (e) {
+                this.emit('error', e)
+            }
+        } else {
+            this._client = new net.Socket()
+            this._client.connect(parseInt(this._chat_info.port), this._chat_info.addr)
+            this._client.on('connect', on_connect)
+        }
         this._client.on('error', err => {
             this.emit('error', err)
         })

@@ -18,7 +18,9 @@
   "dependencies": {
     "md5": "*",
     "request": "*",
-    "request-promise": "*"
+    "request-promise": "*",
+    "socks": "^2.1.2",
+    "socks-proxy-agent": "*"
   },
   "author": "BacooTang",
   "license": "MIT",
