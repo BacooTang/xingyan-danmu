@@ -245,6 +245,7 @@ class xingyan_danmu extends events {
                 },
                 id: md5(JSON.stringify(msg)),
                 price: price * count,
+                price: price * count * 0.1,
                 count: count,
                 raw: msg
             }
