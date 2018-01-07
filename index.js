@@ -1,14 +1,12 @@
 const net = require('net')
 const url = require('url')
 const md5 = require('md5')
-const delay = require('delay')
 const events = require('events')
 const request = require('request-promise')
 const socks = require('socks').SocksClient
 const socks_agent = require('socks-proxy-agent')
 
 const timeout = 30000
-const close_delay = 100
 const heartbeat_interval = 30000
 const fresh_gift_interval = 60 * 60 * 1000
 const r = request.defaults({ json: true, gzip: true, timeout: timeout })
@@ -85,7 +83,6 @@ class xingyan_danmu extends events {
     async start() {
         if (this._starting) return
         this._starting = true
-        this._reconnect = true
         this._chat_info = await this._get_chat_info()
         if (!this._chat_info || !this._chat_info.addr || !this._chat_info.port) {
             this.emit('error', new Error('Fail to get chat info'))
@@ -128,8 +125,6 @@ class xingyan_danmu extends events {
         this._client.on('close', async () => {
             this._stop()
             this.emit('close')
-            await delay(close_delay)
-            this._reconnect && this.start()
         })
         this._client.on('data', this._on_data.bind(this))
     }
@@ -269,7 +264,6 @@ class xingyan_danmu extends events {
     }
 
     stop() {
-        this._reconnect = false
         this.removeAllListeners()
         this._stop()
     }

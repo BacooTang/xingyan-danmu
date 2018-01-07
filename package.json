@@ -1,6 +1,6 @@
 {
   "name": "xingyan-danmu",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "panda.tv xingyan danmu module",
   "main": "index.js",
   "scripts": {
@@ -18,7 +18,6 @@
   "dependencies": {
     "md5": "^2.2.1",
     "socks": "^2.1.2",
-    "delay": "^2.0.0",
     "request": "^2.83.0",
     "request-promise": "^4.2.2",
     "socks-proxy-agent": "^3.0.1"
