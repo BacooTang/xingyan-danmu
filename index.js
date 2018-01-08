@@ -29,7 +29,7 @@ class xingyan_danmu extends events {
         this._proxy_opt = {
             timeout: timeout,
             command: 'connect',
-            destination: { host: danmu_addr, port: danmu_port },
+            destination: {},
             proxy: { ipaddress: proxy_obj.hostname, port: parseInt(proxy_obj.port), type: 5 },
         }
         if (proxy_obj.auth) {
