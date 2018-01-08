@@ -1,6 +1,6 @@
 {
   "name": "xingyan-danmu",
-  "version": "2.0.3",
+  "version": "2.0.4",
   "description": "panda.tv xingyan danmu module",
   "main": "index.js",
   "scripts": {
