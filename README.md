@@ -18,23 +18,29 @@ npm install xingyan-danmu --save
 
 ```javascript
 const xingyan_danmu = require('xingyan-danmu')
-const roomid = '100046'
+const roomid = '103973'
 const client = new xingyan_danmu(roomid)
 
 client.on('connect', () => {
-    console.log(`已连接星颜 ${roomid}房间弹幕~`)
+    console.log(`已连接xingyan ${roomid}房间弹幕~`)
 })
 
 client.on('message', msg => {
-    switch(msg.type){
+    switch (msg.type) {
         case 'chat':
             console.log(`[${msg.from.name}]:${msg.content}`)
             break
         case 'gift':
             console.log(`[${msg.from.name}]->赠送${msg.count}个${msg.name}`)
             break
-        default:
-            //do what you like
+        case 'zhuzi':
+            console.log(`[${msg.from.name}]->赠送${msg.count}个${msg.name}`)
+            break
+        case 'starval':
+            console.log(`[当前星值]:${msg.count}`)
+            break
+        case 'online':
+            console.log(`[当前人气]:${msg.count}`)
             break
     }
 })
@@ -78,19 +84,15 @@ client.on('close', _ => {
 ### 监听事件
 
 ```javascript
-client.on('connect', () => {
+client.on('connect', _ => {
     console.log('connect')
 })
 
-client.on('message', msg => {
-    console.log('message',msg)
-})
+client.on('message', console.log)
 
-client.on('error', e => {
-    console.log('error',e)
-})
+client.on('error', console.log)
 
-client.on('close', () => {
+client.on('close', _ => {
     console.log('close')
 })
 ```
@@ -105,8 +107,8 @@ client.on('close', () => {
 
 ### msg对象
 
-msg对象type有chat,gift,online,starval,other五种值
-分别对应聊天内容、礼物、在线人数、星值、其他
+msg对象type有chat,gift,zhuzi,online,starval五种值
+分别对应聊天内容、礼物、竹子、在线人数、星值
 
 #### chat消息
 ```javascript
@@ -119,8 +121,8 @@ msg对象type有chat,gift,online,starval,other五种值
             level: '发送者等级,Number',
             plat: '发送者平台(android,ios,pc_web),String'
         },
+        id: '弹幕唯一id,String',
         content: '聊天内容,String',
-        raw: '原始消息,Object'
     }
 ```
 
@@ -135,8 +137,26 @@ msg对象type有chat,gift,online,starval,other五种值
             rid: '发送者rid,String',
             level: '发送者等级,Number'
         },
+        id: '礼物唯一id,String',
         count: '礼物数量,Number',
-        raw: '原始消息,Object'
+        price: '礼物总价值(单位猫币),Number',
+        earn: '礼物总价值(单位元),Number'
+    }
+```
+
+#### zhuzi消息
+```javascript
+    {
+        type: 'zhuzi',
+        time: '毫秒时间戳(服务器无返回time,此处为本地收到消息时间),Number',
+        name: '礼物名称,String',
+        from: {
+            name: '发送者昵称,String',
+            rid: '发送者rid,String',
+            level: '发送者等级,Number'
+        },
+        id: '礼物唯一id,String',
+        count: '礼物数量,Number',
     }
 ```
 
@@ -146,7 +166,6 @@ msg对象type有chat,gift,online,starval,other五种值
         type: 'online',
         time: '毫秒时间戳(服务器无返回time,此处为本地收到消息时间),Number',
         count: '当前人气值,Number',
-        raw: '原始消息,Object'
     }
 ```
 
@@ -156,15 +175,5 @@ msg对象type有chat,gift,online,starval,other五种值
         type: 'starval',
         time: '毫秒时间戳(服务器无返回time,此处为本地收到消息时间),Number',
         count: '主播当前星值,Number',
-        raw: '原始消息,Object'
-    }
-```
-
-#### other消息
-```javascript
-    {
-        type: 'other',
-        time: '毫秒时间戳(服务器无返回time,此处为本地收到消息时间),Number',
-        raw: '原始消息,Object'
     }
 ```
