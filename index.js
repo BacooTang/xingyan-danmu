@@ -112,6 +112,8 @@ class xingyan_danmu extends events {
                 this._on_connect()
             } catch (e) {
                 this.emit('error', e)
+                this._stop()
+                this.emit('close')
             }
         } else {
             this._client = new net.Socket()
